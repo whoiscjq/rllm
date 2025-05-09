@@ -19,6 +19,59 @@ Answer 1: {answer_1}
 Answer 2: {answer_2}
 """
 
+##### extract prob from json ######
+
+def is_numeric(value):
+    try:
+        float(value)
+        return True
+    except Exception:
+        return False
+    
+import re
+def extract_prob(model_response,cut=False):  #get last prob
+    PATTERN_DUAL =  r'\{\"ANSWER\":.*?\}'
+    PATTERN_SINGLE = r'\{\"PROB\":.*?\}'
+    matches = re.findall(PATTERN_DUAL, model_response, re.DOTALL)
+    if not matches:
+        matches = re.findall(PATTERN_SINGLE, model_response, re.DOTALL)
+    matched_str = None
+    prob_str_value=None
+    
+    for match in matches:
+        if match:
+            matched_str = match.lower()
+            if matched_str.startswith("{{") and matched_str.endswith("}}}"):
+                matched_str = matched_str[1:-2]
+            elif matched_str.startswith("{{") and matched_str.endswith("}}"):
+                matched_str = matched_str[1:-1]
+            elif matched_str.startswith("{{") and matched_str.endswith("}"):
+                matched_str = matched_str[1:]
+            elif matched_str.startswith("{") and matched_str.endswith("}}"):
+                matched_str = matched_str[:-1]
+        else:
+            matched_str = None
+
+
+        if matched_str:
+            try:
+                inner_json_obj = json.loads(matched_str)
+            except json.JSONDecodeError:
+                return None
+            tmp_str_value = inner_json_obj.get("prob", None)
+            if tmp_str_value is not None:
+                prob_str_value=str(tmp_str_value)
+    if matched_str is None:
+        prob_str_value = None
+
+    pred_value = prob_str_value if prob_str_value and is_numeric(prob_str_value) else None
+    if pred_value and cut:
+        pred_value=f"{float(pred_value):.4g}"
+    return pred_value
+##### extract prob from json ######
+
+
+
 class RewardMathFn(RewardFn):
     """
     Reward function for evaluating mathematical answers.
@@ -40,7 +93,7 @@ class RewardMathFn(RewardFn):
         else:
             return RewardOutput(reward=self.config.format_error_reward, is_correct=False)
         
-        model_answer = extract_answer(model_solution)
+        model_answer = extract_prob(model_solution) # modified
         if model_answer is None:
             return RewardOutput(reward=self.config.format_error_reward, is_correct=False)
 
@@ -56,9 +109,9 @@ class RewardMathFn(RewardFn):
         # Process each ground truth
         processed_ground_truths = []
         for truth in ground_truths:
-            truth = str(truth)
+            truth = extract_prob(str(truth)) #modified
             if "\\boxed" in truth:
-                processed_truth = extract_answer(truth)
+                processed_truth = extract_prob(truth)
                 if processed_truth is not None:
                     processed_ground_truths.append(processed_truth)
             else:
@@ -139,6 +192,7 @@ def rllm_reward_fn_math(data_source: str, llm_solution: str, ground_truth: Union
 
 
 if __name__ == "__main__":
+    print(RewardConfig)
     reward = RewardMathFn(RewardConfig)
     test_input = RewardInput(
         data_source="",
@@ -156,5 +210,21 @@ if __name__ == "__main__":
         ),
         metadata={"answer": ["10", "$x^{4}-2 x^{3}-13 x^{2}+14 x+24$"], "has_toolcall": True}
     )
-    output = reward(test_input)
+    test_input = RewardInput(
+        data_source="",
+        problem=(
+            "Let $P(x)=x^{4}+2 x^{3}-13 x^{2}-14 x+24$ be a polynomial with roots "
+            "$r_{1}, r_{2}, r_{3}, r_{4}$. Let $Q$ be the quartic polynomial with roots "
+            "$r_{1}^{2}, r_{2}^{2}, r_{3}^{2}, r_{4}^{2}$, such that the coefficient "
+            "of the $x^{4}$ term of $Q$ is 1. Simplify the quotient $Q\\left(x^{2}\\right) / P(x)$, "
+            "leaving your answer in terms of $x$. (You may assume that $x$ is not equal to "
+            "any of $\\left.r_{1}, r_{2}, r_{3}, r_{4}\\right)$."
+        ),
+        problem_type=RewardType.MATH,
+        model_response=(
+            "<think>...</think>\nThe answer is \\boxed{{\"PROB\": \"0.5889\"}}"#\\boxed{24 + 14*x + (-13)*x^2 - 2*x^3 + x^4}.
+        ),
+        metadata={"answer": ["10", "$x^{4}-2 x^{3}-13 x^{2}+14 x+24$","{\"PROB\": \"0.5889\"}"], "has_toolcall": True}
+    )
+    output = reward(test_input) #{\"PROB\": \"0.5889\"}
     print(output)

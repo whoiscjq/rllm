@@ -20,7 +20,7 @@ class RewardConfig:
     
     # General reward constants
     correct_reward: float = 1.0
-    incorrect_reward: float = 0.0
+    incorrect_reward: float = 0.1
     format_error_reward: float = 0.0
     unk_error_reward: float = 0.0
     

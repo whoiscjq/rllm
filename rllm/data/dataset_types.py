@@ -18,6 +18,9 @@ class TrainDataset:
         STILL = "STILL"
         DEEPSCALER = "DEEPSCALER"
         DEEPSCALER_7B = "DEEPSCALER_7B"
+        PN="PN"
+        MIX_PHRASE1="mix_phrase1_train"
+
     
     class Code(enum.Enum):
         TACO = "TACO"
@@ -38,6 +41,8 @@ class TestDataset:
         GSM8k = 'GSM8k'
         MINERVA = 'MINERVA'
         OLYMPIAD_BENCH = 'OLYMPIAD_BENCH'
+        PN='PN_TEST'
+        MIX_PHRASE1="mix_phrase1_test"
     
     class Code(enum.Enum):
         TACO = "TACO"
