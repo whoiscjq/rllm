@@ -68,4 +68,4 @@ export experiment_name="7b_8k_pn"
     trainer.save_freq=10 \
     trainer.test_freq=10 \
     trainer.default_hdfs_dir=null \
-    trainer.total_epochs=20 "${@:1}"\
+    trainer.total_epochs=5 "${@:1}"\

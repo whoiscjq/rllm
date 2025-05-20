@@ -70,7 +70,13 @@ def extract_prob(model_response,cut=False):  #get last prob
     return pred_value
 ##### extract prob from json ######
 
-
+def check_python(text):
+    pattern = r'```python(.*?)```'
+    match = re.search(pattern, text, re.DOTALL)
+    if match:
+        return True
+    else:
+        return False
 
 class RewardMathFn(RewardFn):
     """
@@ -86,12 +92,19 @@ class RewardMathFn(RewardFn):
         
         problem = input.problem
         model_response = input.model_response
+        calc_mode=True
+
+
         
         # Extract solution.
         if THOUGHT_DELIMITER_END in model_response:
             model_solution = model_response.split(THOUGHT_DELIMITER_END)[1]
         else:
             return RewardOutput(reward=self.config.format_error_reward, is_correct=False)
+        
+        if calc_mode:
+            if not check_python(model_solution):
+                return RewardOutput(reward=self.config.format_error_reward, is_correct=False)
         
         model_answer = extract_prob(model_solution) # modified
         if model_answer is None:

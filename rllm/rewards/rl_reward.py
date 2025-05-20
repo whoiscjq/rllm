@@ -2,6 +2,7 @@ from rllm.rewards.reward_types import RewardConfig, RewardFn, RewardInput, Rewar
 from rllm.rewards.math_reward import RewardMathFn
 from rllm.rewards.code_reward import rllm_reward_fn_code 
 from rllm.rewards.math_reward import rllm_reward_fn_math
+from rllm.rewards.calm_reward import rllm_reward_fn_calm
 from typing import Union, List
 import json 
 
@@ -41,5 +42,7 @@ def rllm_reward_fn(data_source: str, llm_solution: str, ground_truth: Union[str,
         except json.JSONDecodeError:
             return False 
         return rllm_reward_fn_code(data_source, llm_solution, ground_truth, **kwargs)
+    elif data_source in ["calm_python"]:
+        return rllm_reward_fn_calm(data_source, llm_solution, ground_truth, extra_info, **kwargs)
     else:
         return rllm_reward_fn_math(data_source, llm_solution, ground_truth, extra_info, **kwargs)

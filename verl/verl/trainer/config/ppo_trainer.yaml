@@ -21,7 +21,7 @@ actor_rollout_ref:
   actor:
     strategy: fsdp  # This is for backward-compatibility
     ppo_mini_batch_size: 256
-    ppo_micro_batch_size: 64
+    ppo_micro_batch_size: 32
     use_dynamic_bsz: False
     ppo_max_token_len_per_gpu: 16384 # n * ${data.max_prompt_length} + ${data.max_response_length}
     grad_clip: 1.0
@@ -88,6 +88,7 @@ actor_rollout_ref:
     # number of responses (i.e. num sample times)
     n: 1 # > 1 for grpo
     n_val: 8
+    n_agent: 8
 
 critic:
   strategy: fsdp
@@ -113,7 +114,7 @@ critic:
         min_num_params: 0
       fsdp_size: -1
   ppo_mini_batch_size: ${actor_rollout_ref.actor.ppo_mini_batch_size}
-  ppo_micro_batch_size: 64
+  ppo_micro_batch_size: 32
   forward_micro_batch_size: ${critic.ppo_micro_batch_size}
   use_dynamic_bsz: ${actor_rollout_ref.actor.use_dynamic_bsz}
   ppo_max_token_len_per_gpu: 32768 # (${actor_rollout_ref.actor.ppo_max_token_len_per_gpu}) * 2

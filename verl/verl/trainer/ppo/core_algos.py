@@ -108,27 +108,97 @@ def compute_gae_advantage_return(token_level_rewards: torch.Tensor, values: torc
 
 
 # NOTE(sgm): this implementation only consider outcome supervision, where the reward is a scalar.
-def compute_grpo_outcome_advantage(token_level_rewards: torch.Tensor,
-                                   eos_mask: torch.Tensor,
-                                   index: torch.Tensor,
-                                   epsilon: float = 1e-6,
-                                   mask_truncated_samples: bool = False):
+# def compute_grpo_outcome_advantage(token_level_rewards: torch.Tensor,
+#                                    eos_mask: torch.Tensor,
+#                                    index: torch.Tensor,
+#                                    epsilon: float = 1e-6,
+#                                    mask_truncated_samples: bool = False):
+#     """
+#     Compute advantage for GRPO, operating only on Outcome reward 
+#     (with only one scalar reward for each response).
+#     Args:
+#         token_level_rewards: `(torch.Tensor)`
+#             shape: (bs, response_length)
+#         eos_mask: `(torch.Tensor)`
+#             shape: (bs, response_length)
+    
+#     Returns:
+#         advantages: `(torch.Tensor)`
+#             shape: (bs, response_length)
+#         Returns: `(torch.Tensor)`
+#             shape: (bs, response_length)
+#     """
+#     response_length = token_level_rewards.shape[-1]
+#     scores = token_level_rewards.sum(dim=-1)
+
+#     id2score = defaultdict(list)
+#     id2mean = {}
+#     id2std = {}
+
+#     with torch.no_grad():
+#         bsz = scores.shape[0]
+#         for i in range(bsz):
+#             id2score[index[i]].append(scores[i])
+        
+#         max_len = 0
+#         for idx in id2score:
+#             if len(id2score[idx]) > max_len:
+#                 max_len = len(id2score[idx])
+
+#         for idx in id2score:
+#             if len(id2score[idx]) == 1:
+#                 if max_len == 1:
+#                     id2mean[idx] = torch.tensor(0.0)
+#                     id2std[idx] = torch.tensor(1.0)
+#                 else:
+#                     id2mean[idx] = torch.mean(torch.tensor(id2score[idx]))
+#                     id2std[idx] = torch.tensor(0.0)
+#             elif len(id2score[idx]) > 1:
+#                 id2mean[idx] = torch.mean(torch.tensor(id2score[idx]))
+#                 id2std[idx] = torch.std(torch.tensor([id2score[idx]]))
+#             else:
+#                 raise ValueError(f"no score in prompt index: {idx}")
+
+#         for i in range(bsz):
+#             if mask_truncated_samples:
+#                 if scores[i] == 0 and eos_mask[i].sum() == response_length:
+#                     scores[i] = 0
+#                 else:
+#                     scores[i] = (scores[i] - id2mean[index[i]]) / (id2std[index[i]] + epsilon)
+#             else:
+#                 scores[i] = (scores[i] - id2mean[index[i]]) / (id2std[index[i]] + epsilon)
+#         scores = scores.unsqueeze(-1).tile([1, response_length]) * eos_mask
+
+#     return scores, scores
+
+#updata base on latest verl
+def compute_grpo_outcome_advantage(
+    token_level_rewards: torch.Tensor,
+    eos_mask: torch.Tensor,
+    index: np.ndarray,
+    epsilon: float = 1e-6,
+    mask_truncated_samples: bool = False,
+    norm_adv_by_std_in_grpo: str = False,
+):
     """
-    Compute advantage for GRPO, operating only on Outcome reward 
+    Compute advantage for GRPO, operating only on Outcome reward
     (with only one scalar reward for each response).
     Args:
         token_level_rewards: `(torch.Tensor)`
             shape: (bs, response_length)
         eos_mask: `(torch.Tensor)`
             shape: (bs, response_length)
-    
+        norm_adv_by_std_in_grpo: (bool)
+            whether to scale the GRPO advantage.
+            If True, the advantage is scaled by the std, as in the original GRPO.
+            If False, the advantage is not scaled, as in Dr.GRPO (https://arxiv.org/abs/2503.20783).
+
     Returns:
         advantages: `(torch.Tensor)`
             shape: (bs, response_length)
         Returns: `(torch.Tensor)`
             shape: (bs, response_length)
     """
-    response_length = token_level_rewards.shape[-1]
     scores = token_level_rewards.sum(dim=-1)
 
     id2score = defaultdict(list)
@@ -139,35 +209,21 @@ def compute_grpo_outcome_advantage(token_level_rewards: torch.Tensor,
         bsz = scores.shape[0]
         for i in range(bsz):
             id2score[index[i]].append(scores[i])
-        
-        max_len = 0
-        for idx in id2score:
-            if len(id2score[idx]) > max_len:
-                max_len = len(id2score[idx])
-
         for idx in id2score:
             if len(id2score[idx]) == 1:
-                if max_len == 1:
-                    id2mean[idx] = torch.tensor(0.0)
-                    id2std[idx] = torch.tensor(1.0)
-                else:
-                    id2mean[idx] = torch.mean(torch.tensor(id2score[idx]))
-                    id2std[idx] = torch.tensor(0.0)
+                id2mean[idx] = torch.tensor(0.0)
+                id2std[idx] = torch.tensor(1.0)
             elif len(id2score[idx]) > 1:
                 id2mean[idx] = torch.mean(torch.tensor(id2score[idx]))
                 id2std[idx] = torch.std(torch.tensor([id2score[idx]]))
             else:
                 raise ValueError(f"no score in prompt index: {idx}")
-
         for i in range(bsz):
-            if mask_truncated_samples:
-                if scores[i] == 0 and eos_mask[i].sum() == response_length:
-                    scores[i] = 0
-                else:
-                    scores[i] = (scores[i] - id2mean[index[i]]) / (id2std[index[i]] + epsilon)
-            else:
+            if norm_adv_by_std_in_grpo:
                 scores[i] = (scores[i] - id2mean[index[i]]) / (id2std[index[i]] + epsilon)
-        scores = scores.unsqueeze(-1).tile([1, response_length]) * eos_mask
+            else:
+                scores[i] = scores[i] - id2mean[index[i]]
+        scores = scores.unsqueeze(-1) * eos_mask
 
     return scores, scores
 

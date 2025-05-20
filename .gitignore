@@ -198,3 +198,4 @@ rllm/data/train/code/livecodebench.json
 rllm/data/train/code/kodcode.json
 rllm/data/train/code/primeintellect.json
 rllm/data/train/code/primeintellect_dedupe.json
+scripts/deepscaler/train/test.py
