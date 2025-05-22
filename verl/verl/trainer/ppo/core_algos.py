@@ -200,13 +200,14 @@ def compute_grpo_outcome_advantage(
             shape: (bs, response_length)
     """
     scores = token_level_rewards.sum(dim=-1)
-
+    response_length = eos_mask.shape[-1]
     id2score = defaultdict(list)
     id2mean = {}
     id2std = {}
 
     with torch.no_grad():
         bsz = scores.shape[0]
+        
         for i in range(bsz):
             id2score[index[i]].append(scores[i])
         for idx in id2score:
@@ -219,10 +220,19 @@ def compute_grpo_outcome_advantage(
             else:
                 raise ValueError(f"no score in prompt index: {idx}")
         for i in range(bsz):
-            if norm_adv_by_std_in_grpo:
-                scores[i] = (scores[i] - id2mean[index[i]]) / (id2std[index[i]] + epsilon)
+            if mask_truncated_samples:
+                if scores[i] == 0 and eos_mask[i].sum() == response_length:
+                    scores[i] = 0
+                else:
+                    if norm_adv_by_std_in_grpo:
+                        scores[i] = (scores[i] - id2mean[index[i]]) / (id2std[index[i]] + epsilon)
+                    else:
+                        scores[i] = scores[i] - id2mean[index[i]]
             else:
-                scores[i] = scores[i] - id2mean[index[i]]
+                if norm_adv_by_std_in_grpo:
+                    scores[i] = (scores[i] - id2mean[index[i]]) / (id2std[index[i]] + epsilon)
+                else:
+                    scores[i] = scores[i] - id2mean[index[i]]
         scores = scores.unsqueeze(-1) * eos_mask
 
     return scores, scores

@@ -17,6 +17,7 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+#n should be change to n
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 #MODEL_PATH="/oss/chenjunqi/rllm/checkpoints/deepcausal/14b_4k_pnps_calc/actor/global_step_60"
 # Set default model path if not provided
@@ -54,7 +55,7 @@ export experiment_name="14b_4k_five_calc_zshot"
     actor_rollout_ref.rollout.temperature=0.6 \
     actor_rollout_ref.rollout.val_temperature=0.6 \
     actor_rollout_ref.rollout.gpu_memory_utilization=0.6 \
-    actor_rollout_ref.rollout.n_agent=4 \
+    actor_rollout_ref.rollout.n=4 \
     actor_rollout_ref.rollout.n_val=2 \
     actor_rollout_ref.ref.fsdp_config.param_offload=True \
     algorithm.kl_ctrl.kl_coef=0.001 \

@@ -88,7 +88,6 @@ actor_rollout_ref:
     # number of responses (i.e. num sample times)
     n: 1 # > 1 for grpo
     n_val: 8
-    n_agent: 8
 
 critic:
   strategy: fsdp

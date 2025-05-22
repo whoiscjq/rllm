@@ -103,7 +103,7 @@ def make_map_fn(split: str):
             #return None
         else:
             shot=''
-            return None
+            #return None
             
         #oneshot='question: Input Info: Imagine a self-contained, hypothetical world with only the following conditions, and without any unmentioned factors or causal relationships:Amount of sunlight exposure has a direct effect on vitamin d levels.Amount of sunlight exposure has a direct effect on bone density.Amount of sunlight exposure has a direct effect on risk of osteoporosis.Vitamin d levels has a direct effect on bone density.Bone density has a direct effect on risk of osteoporosis.\nFor those with amount of sunlight exposure being limited (A=0), the probability of vitamin d levels being low (B=0) is 0.2544. The probability of amount of sunlight exposure being limited (A=0) and vitamin d levels being low (B=0) is 0.0814. The probability of amount of sunlight exposure being abundant (A=1) and vitamin d levels being optimal (B=1) is 0.6525. \nInstruction: Consider the probability of necessity (PN) of amount of sunlight exposure on vitamin d levels.\nQuestion: Given that amount of sunlight exposure was abundant and vitamin d levels was optimal, what is the upper bound of the probability of the vitamin d levels would have been low if the amount of sunlight exposure had been limited?\nProvide the calculation result to four decimal places in JSON format, like {"PROB": "0.1234"}:\nanswer: Calculate P(B=0|do(A=0))\nP(B=0|do(A=0))=P(B=0|A=0)=0.2544. Upper bound of PN: min{1, [P(B=0)|do(A=0)-P(A=0,B=0)]/P(A=1,B=1)}\n=min{1, (0.2544-0.0814)/0.6525}\n=min{1, 0.2652}\n=0.2652 \n\n'
         
@@ -115,7 +115,7 @@ def make_map_fn(split: str):
 3. Do NOT add any extra text/messages (like "Result: ")
 Let's think step by step."""
             #instruction = "Let's think step by step and output the final answer within \\boxed{}."
-        #shot=""
+        shot=""
         question = f"{shot} question: {question} \n {instruction}"
                 #question =f"{question}{instruction}"
         
@@ -146,7 +146,7 @@ Let's think step by step."""
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process datasets for DeepScaler training')
-    parser.add_argument('--local_dir', default="/mnt/workspace/RL_for_Causal/rllm/data/PN_calc",
+    parser.add_argument('--local_dir', default="/mnt/workspace/RL_for_Causal/rllm/data/PS_python",
                        help='Local directory to save processed datasets')
     parser.add_argument('--hdfs_dir', default=None,
                        help='Optional HDFS directory to copy datasets to')

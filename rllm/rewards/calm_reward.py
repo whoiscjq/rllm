@@ -76,11 +76,13 @@ def run_response_python(text):
     if match:
         code = match.group(1).strip()
     else:
+        #print("No code block found.\n")
+        #print("input: \n"+text+"\n")
         return None
     output_buffer = StringIO()
     global_scope = {}
     local_scope = {}
-    print("code: \n",code)
+    #print("code: \n"+code+"\n")
     try:
         with redirect_stdout(output_buffer):
             exec(code, global_scope, local_scope)
@@ -88,9 +90,10 @@ def run_response_python(text):
         output=output_buffer.getvalue()
     
     except Exception as e:
-        print(e)
-        output=None
-    #print(output)
+        #print(f"Exception {e}")
+        return None
+    
+    #print("code output:"+output)
     return output
 
 class RewardMathFn(RewardFn):
@@ -106,16 +109,18 @@ class RewardMathFn(RewardFn):
             "Invalid problem type: expected 'MATH', but got '{}'".format(input.problem_type)
         
         problem = input.problem
-        model_response = input.model_response
+        model_response = input.model_response.split("<｜Assistant｜>")[1]
 
 
         
         # Extract solution.
         if THOUGHT_DELIMITER_END in model_response:
-            model_solution = model_response.split(THOUGHT_DELIMITER_END)[1]
+            model_solution = model_response.split(THOUGHT_DELIMITER_END)[-1]
         else:
+            print("</think> not found \n")
+            #print("model_response: "+model_response) 
             return RewardOutput(reward=self.config.format_error_reward, is_correct=False)
-        
+        #print("model_response"+model_response)
 
         model_solution= run_response_python(model_solution)
         if not model_solution:
